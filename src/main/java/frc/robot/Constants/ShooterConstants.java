@@ -2,7 +2,7 @@ package frc.robot.Constants;
 
 public class ShooterConstants {
 
-    private static final int shooterID = 12;
+    public static final int shooterID = 12;
 
     public static final double currentLimit = 80;
 

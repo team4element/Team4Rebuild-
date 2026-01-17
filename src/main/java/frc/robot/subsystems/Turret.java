@@ -45,6 +45,7 @@ public class Turret extends SubsystemBase{
 
     public Turret(){
         m_turret = new TalonFX(TurretConstants.turretID);
+        m_shooter = new TalonFX(ShooterConstants.shooterID);
         m_encoder = new CANcoder(TurretConstants.encoderID);
 
         // The turret motor will start with half speed
