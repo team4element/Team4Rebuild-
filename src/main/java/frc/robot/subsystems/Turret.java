@@ -8,6 +8,7 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.Constants.ControllerConstants;
@@ -15,26 +16,29 @@ import frc.robot.Constants.TurretConstants;
 import frc.robot.Constants.VisionConstants;
 
 public class Turret extends SubsystemBase{
-TalonFX m_turret;
-CANcoder m_encoder;
+    private TalonFX m_turret;
+    private CANcoder m_encoder;
 
-DutyCycleOut m_dutyCycle;
-CurrentLimitsConfigs m_limitConfig = new CurrentLimitsConfigs();
+    private DutyCycleOut m_dutyCycle;
+    private CurrentLimitsConfigs m_limitConfig = new CurrentLimitsConfigs();
 
-double TX, TY;
-boolean TV;
+    private double TX, TY;
+    private boolean TV;
 
-TurretState turretAction;
+    private TurretState turretAction;
+
+    private PIDController m_pidControl;
     
     public Turret(){
         m_turret = new TalonFX(TurretConstants.turretID);
         m_encoder = new CANcoder(TurretConstants.encoderID);
         m_dutyCycle = new DutyCycleOut(0.5); //motor will start with half speed
+        m_pidControl = new PIDController(TurretConstants.KP, TurretConstants.KI, TurretConstants.KD);
         TalonFXConfiguration config = new TalonFXConfiguration();
       //  config.MotorOutput.withInverted(InvertedValue.Clockwise_Positive);
-        config.Slot0.kP = 1;
-        config.Slot0.kI = 1;
-        config.Slot0.kD = 1;
+        // config.Slot0.kP = 1;
+        // config.Slot0.kI = 1;
+        // config.Slot0.kD = 1;
 
         TalonFXConfigurator configurator = m_turret.getConfigurator();
 
@@ -42,6 +46,8 @@ TurretState turretAction;
         m_limitConfig.StatorCurrentLimit = TurretConstants.currentLimit;
         m_limitConfig.StatorCurrentLimitEnable = true;
         configurator.apply(m_limitConfig);
+
+        m_pidControl.setTolerance(2); //deadband in degrees
 
         TX = VisionConstants.tx;
         TY = VisionConstants.ty;
@@ -69,14 +75,6 @@ TurretState turretAction;
     public void stopMotor(){
         m_turret.setControl(m_dutyCycle.withOutput(0));
         m_turret.setNeutralMode(NeutralModeValue.Brake);
-    }
-
-    public void turnUntilApriltag(){
-        if(!TV){
-        m_turret.setControl(m_dutyCycle.withOutput(0.1));
-        } else{
-            stopMotor();
-        }
     }
 
     public double getTurretDegree(){//finds the angle with an external encoder
@@ -156,12 +154,43 @@ TurretState turretAction;
             return targetingAngularVelocity;
     } 
 
+    public void turnUntilApriltag(){
+        if(!TV){
+            m_turret.setControl(m_dutyCycle.withOutput(0.1));
+            if(getTurretDegree() >= TurretConstants.leftLimit || getTurretDegree() <= TurretConstants.rightLimit){
+                turretAction = TurretState.IDLE;
+            }
+        } else{
+            stopMotor();
+            m_pidControl.setSetpoint(findAngleToTarget());
+            runMotor(m_pidControl.calculate(getTurretDegree()));
+
+            if(m_pidControl.atSetpoint()){
+                turretAction = TurretState.IDLE;
+            }
+        }
+    }
+
+    public void track(){
+           if(!TV){
+            m_turret.setControl(m_dutyCycle.withOutput(0.1));
+            if(getTurretDegree() >= TurretConstants.leftLimit || getTurretDegree() <= TurretConstants.rightLimit){
+                turretAction = TurretState.IDLE;
+            }
+        } else{
+            stopMotor();
+            m_pidControl.setSetpoint(findAngleToTarget());
+            runMotor(m_pidControl.calculate(getTurretDegree()));
+
+        }
+    }
+
     public void setTurretAction(TurretState state){
         switch (state) {
             case IDLE:        stopMotor();              break;
             case MANUAL:      rotateManual(0.5);  break;
             case FIND_TARGET: turnUntilApriltag();      break;
-            case TRACK:       findAngleToTarget();      break; 
+            case TRACK:       track();                  break; 
             default: stopMotor();  break;
         }
     }
