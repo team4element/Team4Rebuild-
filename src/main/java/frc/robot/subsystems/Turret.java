@@ -1,5 +1,5 @@
 /*
- * This subsystem should track the apriltag using limelight data by spinning the turret and shoot fuel into the hub
+ * This subsystem should track the apriltag using limelight camera data by spinning the turret and shoot fuel (scoring element) into the hub (score)
  * The turret's actions are given by states: IDLE, MANUAL, LOCK_ONTO_TARGET, TRACK_APRILTAG
  */
 
@@ -23,18 +23,15 @@ import frc.robot.Constants.VisionConstants;
 
 public class Turret extends SubsystemBase{
     // Declares motors and sensors
-    private TalonFX m_turret;
-    private TalonFX m_shooter;
+    private TalonFX m_turret, m_shooter;
     private CANcoder m_encoder;
 
     // Used to control speed of motors
-    private DutyCycleOut m_dutyCycleTurret;
-    private DutyCycleOut m_dutyCycleShooter;
+    private DutyCycleOut m_dutyCycleTurret, m_dutyCycleShooter;
     private PIDController m_pidControl;
 
     // Limits brownouts by limiting current applied to motors
-    private CurrentLimitsConfigs m_turretLimitConfig = new CurrentLimitsConfigs();
-    private CurrentLimitsConfigs m_shooterLimitConfig = new CurrentLimitsConfigs();
+    private CurrentLimitsConfigs m_turretLimitConfig, m_shooterLimitConfig;
 
     // Declares x and y offsets from limelight
     private double TX, TY;
@@ -48,10 +45,14 @@ public class Turret extends SubsystemBase{
         m_shooter = new TalonFX(ShooterConstants.shooterID);
         m_encoder = new CANcoder(TurretConstants.encoderID);
 
-        // The turret motor will start with half speed
+        // The turret and shooter motor will start with half speed
         m_dutyCycleTurret = new DutyCycleOut(0.5);
-        m_dutyCycleShooter = new DutyCycleOut(1);
+        m_dutyCycleShooter = new DutyCycleOut(0.5);
         m_pidControl = new PIDController(TurretConstants.KP, TurretConstants.KI, TurretConstants.KD);
+
+        m_turretLimitConfig = new CurrentLimitsConfigs();
+        m_shooterLimitConfig = new CurrentLimitsConfigs();
+
         TalonFXConfiguration turretConfig = new TalonFXConfiguration();
         TalonFXConfiguration shooterConfig = new TalonFXConfiguration();
         // turretConfig.MotorOutput.withInverted(InvertedValue.Clockwise_Positive);
@@ -99,7 +100,7 @@ public class Turret extends SubsystemBase{
     }
 
     /**
-     * assigns a speed to run the turret motor.
+     * Assigns a speed to run the turret motor.
      * @param speedPercentage from -1 to 1.
      */
     public void spinTurret(double speedPercentage){
@@ -124,7 +125,8 @@ public class Turret extends SubsystemBase{
     }
 
     /**
-     * @return The current angle in degrees of the turret with an external encoder.
+     * Finds the current angle in degrees of the turret with an external encoder.
+     * @return the angle.
      */ 
     public double getTurretDegree(){
         double angle = m_encoder.getAbsolutePosition().getValueAsDouble();
@@ -163,8 +165,9 @@ public class Turret extends SubsystemBase{
     }
 
     /**
+     * Finds the distance between the apriltag and the limelight (center of lens) 
      * @link https://docs.limelightvision.io/docs/docs-limelight/tutorials/tutorial-estimating-distance  -> Explains the calculations to find the distance
-     * @return The length from the limelight camera (center of lens) to the apriltag.
+     * @return The distance as a degree in radians
      */
     public double findDistance(){
         double degreesToGoal = VisionConstants.mountedDegree + TY;
@@ -174,8 +177,9 @@ public class Turret extends SubsystemBase{
     }
 
     /**
-     * @return The degree in radians that robot needs to turn to get to center of apriltag if apritag is detected.
-     * @return No movement if apriltag is not found.
+     * Gets the degree the robot needs to turn to get to center of apriltag if the apritag is detected.
+     * Results in an error if the apriltag isn't there.
+     * @return The degree in radians.
      */
     public double findAngleToTarget(){
         if(TV == true){
@@ -195,17 +199,22 @@ public class Turret extends SubsystemBase{
         }
     }
 
-    double limelight_aim_proportional(){    
+    /**
+     * Gets the velocity needed to center the turret to the apriltag by the x axis of the turret
+     * @return the speed
+     */
+    //TODO: This should be tested later with turnUntilApriltag function
+    public double limelight_aim_proportional(){    
         // kP (constant of proportionality)
         // This is a hand-tuned number that determines the aggressiveness of our proportional control loop.
         // If it is too high, the robot will oscillate.
         // If it is too low, the robot will never reach its target.
-        // If the robot never turns in the correct direction, kP should be inverted.
+        // If the turret never turns in the correct direction, kP should be inverted.
         double kP = .035;
 
         // tx ranges from (-hfov/2) to (hfov/2) in degrees. If your target is on the rightmost edge of 
         // your limelight 3 feed, tx should return roughly 31 degrees.
-        double targetingAngularVelocity = LimelightHelpers.getTX("limelight") * kP;
+        double targetingAngularVelocity = TX * kP;
 
         // convert to radians per second for our drive method
         targetingAngularVelocity *= kP;
@@ -267,7 +276,7 @@ public class Turret extends SubsystemBase{
             case IDLE:              stopMotors();                 break;
             case MANUAL:            rotateManual(0.1);            break;
             case LOCK_ONTO_TARGET:  turnUntilApriltag(0.5);       break;
-            case TRACK_APRILTAG:     track(0.5);                  break; 
+            case TRACK_APRILTAG:    track(0.5);                   break; 
             default: stopMotors();                                break;
         }
     }
