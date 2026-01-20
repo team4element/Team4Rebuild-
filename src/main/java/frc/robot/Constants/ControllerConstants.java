@@ -4,7 +4,8 @@
 
 package frc.robot.Constants;
 
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.JoystickModifier;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
@@ -16,7 +17,11 @@ import edu.wpi.first.wpilibj.XboxController;
  */
 public final class ControllerConstants {
 
-    public static final XboxController driverController = new XboxController(0) ;
-    public static final XboxController operatorController = new XboxController(1);
+    public static final CommandXboxController driverController = new CommandXboxController(0) ;
+    public static final CommandXboxController operatorController = new CommandXboxController(1);
+
+    public static final JoystickModifier yTranslationModifier = new JoystickModifier("yTranslationModifier");
+    public static final JoystickModifier xTranslationModifier = new JoystickModifier("xTranslationModifier");
+    public static final JoystickModifier zRotationModifier = new JoystickModifier("zRotationModifier");  
 
 }
