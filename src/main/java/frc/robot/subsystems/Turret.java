@@ -22,6 +22,13 @@ import frc.robot.Constants.TurretConstants;
 import frc.robot.Constants.VisionConstants;
 
 public class Turret extends SubsystemBase{
+    public enum TurretState{
+        IDLE, // Doesn't move the turret
+        MANUAL, // Allows custom control of the turret from the controller
+        LOCK_ONTO_TARGET, // Centers the turret to apriltag once
+        TRACK_APRILTAG // Centers the turret to apriltag as long as it remains in this state
+    }
+
     // Declares motors and sensors
     private TalonFX m_turret, m_shooter;
     private CANcoder m_encoder;
@@ -90,13 +97,6 @@ public class Turret extends SubsystemBase{
 
         // Constantly updates the turret state
         setTurretAction(turretAction);
-    }
-
-    public enum TurretState{
-        IDLE, // Doesn't move the turret
-        MANUAL, // Allows custom control of the turret from the controller
-        LOCK_ONTO_TARGET, // Centers the turret to apriltag once
-        TRACK_APRILTAG // Centers the turret to apriltag as long as it remains in this state
     }
 
     /**
