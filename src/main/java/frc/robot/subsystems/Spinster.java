@@ -10,10 +10,11 @@ import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ConveyorConstants;
 import frc.robot.Constants.SpinsterConstants;
 
-public class Spinster {
+public class Spinster extends SubsystemBase{
     // Declares spinster motors
     public TalonFX m_motor;
     
