@@ -22,4 +22,9 @@ public class TurretConstants {
     public static final double KPShooter = 0.1; 
     public static final double KIShooter = 0;
     public static final double KDShooter = 0;
+
+    public static final double shooterSpeed = 0.5;
+    public static final double shooterTimeout = 2;
+
+    public static final double turretSpeed = 0.5;
 }

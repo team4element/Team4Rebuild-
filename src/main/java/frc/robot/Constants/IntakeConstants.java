@@ -10,4 +10,8 @@ public class IntakeConstants {
     
     public static final int currentLimitLinearSlide = 80;    
     public static final int currentLimitRollers = 80; 
+
+    public static final double linearSlideSpeed = 0.5;    
+    public static final double rollerSpeed = 0.5;    
+    public static final double intakeTimeout = 2;
 }

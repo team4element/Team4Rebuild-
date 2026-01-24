@@ -15,15 +15,24 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Commands.FindApriltag;
 import frc.robot.Commands.IntakeAndRetract;
+import frc.robot.Commands.IntakeFuel;
 import frc.robot.Commands.ManualClimbDown;
 import frc.robot.Commands.ManualClimbUp;
 import frc.robot.Commands.Shoot;
+import frc.robot.Commands.TransferFuel;
+import frc.robot.Constants.ClimbConstants;
 import frc.robot.Constants.ControllerConstants;
+import frc.robot.Constants.ConveyorConstants;
+import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.TunerConstants;
+import frc.robot.Constants.TurretConstants;
 import frc.robot.Subsystems.Climb;
 import frc.robot.Subsystems.CommandSwerveDrivetrain;
+import frc.robot.Subsystems.Conveyor;
 import frc.robot.Subsystems.Intake;
+import frc.robot.Subsystems.Spinster;
 import frc.robot.Subsystems.Turret;
 
 /**
@@ -48,13 +57,16 @@ public class RobotContainer {
   public final Climb m_climb = new Climb();
   public final Turret m_turret = new Turret();
   public final Intake m_intake = new Intake();
+  public final Spinster m_spinster = new Spinster();
+  public final Conveyor m_conveyor = new Conveyor();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
-    NamedCommands.registerCommand("Shoot", new Shoot(m_turret, 0.5).withTimeout(2));
-    NamedCommands.registerCommand("Climb", new ManualClimbDown(m_climb, 0.5).withTimeout(0.5));
-    NamedCommands.registerCommand("Intake", new IntakeAndRetract(m_intake, 0.5, 0.5).withTimeout(4));
+    NamedCommands.registerCommand("Shoot", new Shoot(m_turret, TurretConstants.shooterSpeed).withTimeout(TurretConstants.shooterTimeout));
+    NamedCommands.registerCommand("Climb", new ManualClimbDown(m_climb, ClimbConstants.climbSpeed).withTimeout(ClimbConstants.climbTimeout));
+    NamedCommands.registerCommand("Intake", new IntakeAndRetract(m_intake, IntakeConstants.linearSlideSpeed, IntakeConstants.rollerSpeed).withTimeout(IntakeConstants.intakeTimeout));
+    NamedCommands.registerCommand("Transfer", new TransferFuel(m_spinster, m_conveyor, ConveyorConstants.conveyorSpeed));
 
     sendableAuton = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Chooser", sendableAuton);
@@ -78,8 +90,11 @@ public class RobotContainer {
 
     ControllerConstants.driverController.leftBumper().whileTrue(m_drivetrain.runOnce(() -> m_drivetrain.seedFieldCentric()));
 
-    ControllerConstants.operatorController.pov(0).whileTrue(new ManualClimbUp(m_climb, 0.5));
-    ControllerConstants.operatorController.pov(180).whileTrue(new ManualClimbDown(m_climb, 0.5));
+    ControllerConstants.operatorController.pov(0).whileTrue(new ManualClimbUp(m_climb, ClimbConstants.climbSpeed));
+    ControllerConstants.operatorController.pov(180).whileTrue(new ManualClimbDown(m_climb, ClimbConstants.climbSpeed));
+    ControllerConstants.operatorController.leftBumper().whileTrue(new IntakeFuel(m_intake, IntakeConstants.linearSlideSpeed, IntakeConstants.rollerSpeed));
+    ControllerConstants.operatorController.y().whileTrue(new Shoot(m_turret, TurretConstants.shooterSpeed));
+    ControllerConstants.operatorController.b().whileTrue(new FindApriltag(m_turret, TurretConstants.turretSpeed));
   }
 
   /*

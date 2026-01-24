@@ -9,4 +9,9 @@ public class ClimbConstants {
     
     public static final double KP = 0.5;
     public static final double KD = 0.5;
+
+    public static final double climbSpeed = 0.5;
+    public static final double climbTimeout = 2;
+
+
 }
