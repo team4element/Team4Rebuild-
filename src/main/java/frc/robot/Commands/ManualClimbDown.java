@@ -10,11 +10,11 @@ import frc.robot.Subsystems.Climb;
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
 public class ManualClimbDown extends Command {
   private Climb m_climb;
-  private double m_speedPercentage;
+  private double v_speedPercentage;
 
   public ManualClimbDown(Climb climb, double speedPercentage) {
     m_climb = climb;
-    m_speedPercentage = speedPercentage;
+    v_speedPercentage = speedPercentage;
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(climb);
@@ -27,7 +27,7 @@ public class ManualClimbDown extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_climb.runMotorDown(m_speedPercentage);
+    m_climb.runMotorDown(v_speedPercentage);
   }
 
   // Called once the command ends or is interrupted.

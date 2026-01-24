@@ -11,11 +11,11 @@ import frc.robot.Subsystems.Climb;
 public class ManualClimbUp extends Command {
   /** Creates a new ManualClimb. */
   private Climb m_climb;
-  private double m_speedPercentage;
+  private double v_speedPercentage;
 
   public ManualClimbUp(Climb climb, double speedPercentage) {
     m_climb = climb;
-    m_speedPercentage = speedPercentage;
+    v_speedPercentage = speedPercentage;
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(climb);
@@ -28,7 +28,7 @@ public class ManualClimbUp extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_climb.runMotorUp(m_speedPercentage);
+    m_climb.runMotorUp(v_speedPercentage);
   }
 
   // Called once the command ends or is interrupted.
