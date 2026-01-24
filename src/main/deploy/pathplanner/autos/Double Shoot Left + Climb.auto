@@ -13,6 +13,12 @@
         {
           "type": "named",
           "data": {
+            "name": "Transfer"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
             "name": "Shoot"
           }
         },
@@ -32,6 +38,12 @@
           "type": "path",
           "data": {
             "pathName": "Fuel to shoot position"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Transfer"
           }
         },
         {
