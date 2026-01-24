@@ -1,11 +1,12 @@
 /*
- * This subsystem controls the belt on the climb to pull onto levels 1, 2, and 3
- * The climb can be used manually and by internal encoder position
+ * This subsystem controls the belt on the climb to pull onto levels 1, 2, and 3.
+ * The climb can be used manually or by the internal encoder position.
  */
 
 package frc.robot.Subsystems;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -19,23 +20,35 @@ public class Climb extends SubsystemBase{
     private TalonFX m_motor;
 
     // Declare the vertical bounds based on encoder 
-    private double highLimit;
-    private double lowLimit;
+    private double highLimit = 100;
+    private double lowLimit = -100;
 
     // Used to control speed of the motor
     private DutyCycleOut m_dutyCycle;
-    // Used to control position of the motor
+    // Used to control the PID and motor's default action
+    private TalonFXConfiguration m_talonConfigs;
+    // Used to control the position of the motor
     private PositionVoltage m_positionRequest;
+    // Used as an additional limit to the amount of voltage the motor could use that helps prevent brownout
     private CurrentLimitsConfigs m_currentLimit;
 
     // Controls print statement output to terminal
     private boolean debug;
 
     public Climb(){
-        m_motor = new TalonFX(ClimbConstants.ID);
+        m_motor = new TalonFX(ClimbConstants.climbID);
 
-        m_dutyCycle = new DutyCycleOut(0.5);
+        // The turret and shooter motor will start with half speed
+        m_dutyCycle = new DutyCycleOut(ClimbConstants.dutyCycle);
         m_currentLimit = new CurrentLimitsConfigs();
+
+        m_talonConfigs = new TalonFXConfiguration();
+        m_talonConfigs.MotorOutput.withNeutralMode(NeutralModeValue.Brake);
+
+        m_talonConfigs.Slot0.kP = ClimbConstants.KP;
+        m_talonConfigs.Slot0.kD = ClimbConstants.KD;
+
+        m_positionRequest = new PositionVoltage(0).withSlot(0);
 
         m_currentLimit.StatorCurrentLimit = ClimbConstants.currentLimit;
         m_currentLimit.StatorCurrentLimitEnable = true;

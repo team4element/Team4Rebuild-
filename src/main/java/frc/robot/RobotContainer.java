@@ -1,6 +1,7 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+/*
+ * This class puts together the commands from the subsystems and assigns them to triggers on the controllers.
+ * The auton commands are also defined here.
+ */
 
 package frc.robot;
 
@@ -9,15 +10,21 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Commands.IntakeAndRetract;
+import frc.robot.Commands.ManualClimbDown;
 import frc.robot.Commands.ManualClimbUp;
+import frc.robot.Commands.Shoot;
 import frc.robot.Constants.ControllerConstants;
 import frc.robot.Constants.TunerConstants;
 import frc.robot.Subsystems.Climb;
 import frc.robot.Subsystems.CommandSwerveDrivetrain;
+import frc.robot.Subsystems.Intake;
+import frc.robot.Subsystems.Turret;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -39,10 +46,16 @@ public class RobotContainer {
 
   public final CommandSwerveDrivetrain m_drivetrain = TunerConstants.createDrivetrain();
   public final Climb m_climb = new Climb();
+  public final Turret m_turret = new Turret();
+  public final Intake m_intake = new Intake();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
+    NamedCommands.registerCommand("Shoot", new Shoot(m_turret, 0.5).withTimeout(2));
+    NamedCommands.registerCommand("Climb", new ManualClimbDown(m_climb, 0.5).withTimeout(0.5));
+    NamedCommands.registerCommand("Intake", new IntakeAndRetract(m_intake, 0.5, 0.5).withTimeout(4));
+
     sendableAuton = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Chooser", sendableAuton);
 
@@ -65,17 +78,29 @@ public class RobotContainer {
 
     ControllerConstants.driverController.leftBumper().whileTrue(m_drivetrain.runOnce(() -> m_drivetrain.seedFieldCentric()));
 
-    ControllerConstants.operatorController.pov(0).onTrue(new ManualClimbUp(m_climb, 0.5));
+    ControllerConstants.operatorController.pov(0).whileTrue(new ManualClimbUp(m_climb, 0.5));
+    ControllerConstants.operatorController.pov(180).whileTrue(new ManualClimbDown(m_climb, 0.5));
   }
 
+  /*
+   * This runs in initialize on auton to set the climb and turret's starting position.
+   */
   public void onEnable(){
     m_climb.resetMotor();
+    m_turret.resetTurret();
   }
 
+  /*
+   * Switches the drivetrain's forward to be relative to the field (toward the opposing alliance).
+   */
   public Command c_fieldRelative(){
      return m_drivetrain.applyRequest(() -> drive);
   }
 
+  /**
+   * Gets the auton made using Pathplanner which is selected from a drop-down menu.
+   * @returns the auton.
+   */
    public Command getAutonomousCommand() {
     return sendableAuton.getSelected();
   }

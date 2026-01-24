@@ -1,6 +1,7 @@
 package frc.robot.Constants;
 
 public class VisionConstants {
+    
     public static final int limelightID = 0;
 
     // Limelight measurements in inches

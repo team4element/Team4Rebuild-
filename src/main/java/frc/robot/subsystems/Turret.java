@@ -9,6 +9,7 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -17,7 +18,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.Constants.ControllerConstants;
-import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.TurretConstants;
 import frc.robot.Constants.VisionConstants;
 
@@ -35,6 +35,7 @@ public class Turret extends SubsystemBase{
 
     // Used to control speed of motors
     private DutyCycleOut m_dutyCycleTurret, m_dutyCycleShooter;
+    private PositionVoltage m_positionRequest;
     private PIDController m_pidControl;
 
     // Limits brownouts by limiting current applied to motors
@@ -49,13 +50,15 @@ public class Turret extends SubsystemBase{
 
     public Turret(){
         m_turret = new TalonFX(TurretConstants.turretID);
-        m_shooter = new TalonFX(ShooterConstants.shooterID);
+        m_shooter = new TalonFX(TurretConstants.shooterID);
         m_encoder = new CANcoder(TurretConstants.encoderID);
 
         // The turret and shooter motor will start with half speed
-        m_dutyCycleTurret = new DutyCycleOut(0.5);
-        m_dutyCycleShooter = new DutyCycleOut(0.5);
-        m_pidControl = new PIDController(TurretConstants.KP, TurretConstants.KI, TurretConstants.KD);
+        m_dutyCycleTurret = new DutyCycleOut(TurretConstants.dutyCycleTurret);
+        m_dutyCycleShooter = new DutyCycleOut(TurretConstants.dutyCycleShooter);
+        m_pidControl = new PIDController(TurretConstants.KPTurret, TurretConstants.KITurret, TurretConstants.KDTurret);
+
+        m_positionRequest = new PositionVoltage(0);
 
         m_turretLimitConfig = new CurrentLimitsConfigs();
         m_shooterLimitConfig = new CurrentLimitsConfigs();
@@ -65,24 +68,25 @@ public class Turret extends SubsystemBase{
         // turretConfig.MotorOutput.withInverted(InvertedValue.Clockwise_Positive);
 
         // Assigns PID values to the shooter for precise speed 
-        shooterConfig.Slot0.kP = ShooterConstants.KP; // Controls position error
-        shooterConfig.Slot0.kI = ShooterConstants.KI; // Controls integral error using kP and kD (don't change)
-        shooterConfig.Slot0.kD = ShooterConstants.KD; // Controls derivative error 
+        shooterConfig.Slot0.kP = TurretConstants.KPTurret; // Controls position error
+        shooterConfig.Slot0.kI = TurretConstants.KITurret; // Controls integral error using kP and kD (don't change)
+        shooterConfig.Slot0.kD = TurretConstants.KDTurret; // Controls derivative error 
 
         TalonFXConfigurator turretConfigurator = m_turret.getConfigurator();
         TalonFXConfigurator shooterConfigurator = m_shooter.getConfigurator();       
 
         m_turret.getConfigurator().apply(turretConfig);
-        m_turretLimitConfig.StatorCurrentLimit = TurretConstants.currentLimit;
+        m_turretLimitConfig.StatorCurrentLimit = TurretConstants.currentLimitTurret;
         m_turretLimitConfig.StatorCurrentLimitEnable = true;
         turretConfigurator.apply(m_turretLimitConfig);
 
         m_turret.getConfigurator().apply(shooterConfig);
-        m_shooterLimitConfig.StatorCurrentLimit = ShooterConstants.currentLimit;
+        m_shooterLimitConfig.StatorCurrentLimit = TurretConstants.currentLimitShooter;
         m_shooterLimitConfig.StatorCurrentLimitEnable = true;
         shooterConfigurator.apply(m_shooterLimitConfig);
 
         // Applies a deadband to turn the turret (in degrees)
+        // TODO: replace parameter to a constant
         m_pidControl.setTolerance(2);
 
         TX = VisionConstants.tx;
@@ -107,6 +111,13 @@ public class Turret extends SubsystemBase{
         m_turret.setControl(m_dutyCycleTurret.withOutput(speedPercentage));
     }
 
+    /*
+     * Sets the turret's starting position
+     */
+    public void resetTurret(){
+        m_turret.setPosition(0);
+    }
+
     /**
      * Assigns a speed to run the shooter motor.
      * @param speedPercentage from -1 to 1.
@@ -122,6 +133,13 @@ public class Turret extends SubsystemBase{
         m_turret.setControl(m_dutyCycleTurret.withOutput(0));
         m_shooter.setControl(m_dutyCycleTurret.withOutput(0));
         m_turret.setNeutralMode(NeutralModeValue.Brake);
+    }
+
+    /*
+     * Moves the turret to it's 0 position (facing forward)
+     */
+    public void returnToStartPosition(){
+        m_turret.setControl(m_positionRequest.withPosition(0));
     }
 
     /**
