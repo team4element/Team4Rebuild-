@@ -25,7 +25,8 @@ public class FindApriltag extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_turret.setTurretAction(TurretState.LOCK_ONTO_TARGET);
+    //m_turret.setTurretAction(TurretState.LOCK_ONTO_TARGET);
+    m_turret.spinTurret(v_speedPercentage);
   }
 
   // Called once the command ends or is interrupted.

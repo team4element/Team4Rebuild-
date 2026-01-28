@@ -10,11 +10,14 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.Constants.ControllerConstants;
@@ -37,6 +40,7 @@ public class Turret extends SubsystemBase{
     private DutyCycleOut m_dutyCycleTurret, m_dutyCycleShooter;
     private PositionVoltage m_positionRequest;
     private PIDController m_pidControl;
+    private VelocityVoltage m_voltage;
 
     // Limits brownouts by limiting current applied to motors
     private CurrentLimitsConfigs m_turretLimitConfig, m_shooterLimitConfig;
@@ -59,18 +63,23 @@ public class Turret extends SubsystemBase{
         m_pidControl = new PIDController(TurretConstants.KPTurret, TurretConstants.KITurret, TurretConstants.KDTurret);
 
         m_positionRequest = new PositionVoltage(0);
+        m_voltage = new VelocityVoltage(0).withSlot(0);
 
         m_turretLimitConfig = new CurrentLimitsConfigs();
         m_shooterLimitConfig = new CurrentLimitsConfigs();
 
         TalonFXConfiguration turretConfig = new TalonFXConfiguration();
         TalonFXConfiguration shooterConfig = new TalonFXConfiguration();
-        // turretConfig.MotorOutput.withInverted(InvertedValue.Clockwise_Positive);
 
         // Assigns PID values to the shooter for precise speed 
-        shooterConfig.Slot0.kP = TurretConstants.KPTurret; // Controls position error
-        shooterConfig.Slot0.kI = TurretConstants.KITurret; // Controls integral error using kP and kD (don't change)
-        shooterConfig.Slot0.kD = TurretConstants.KDTurret; // Controls derivative error 
+        //shooterConfig.Slot0.kP = TurretConstants.KPTurret; // Controls position error
+        //shooterConfig.Slot0.kI = TurretConstants.KITurret; // Controls integral error using kP and kD (don't change)
+        //shooterConfig.Slot0.kD = TurretConstants.KDTurret; // Controls derivative error 
+
+        // Assigns PID values to the turret for precise speed 
+        turretConfig.Slot0.kP = TurretConstants.KPTurret; // Controls position error
+        turretConfig.Slot0.kI = TurretConstants.KITurret; // Controls integral error using kP and kD (don't change)
+        turretConfig.Slot0.kD = TurretConstants.KDTurret; // Controls derivative error 
 
         TalonFXConfigurator turretConfigurator = m_turret.getConfigurator();
         TalonFXConfigurator shooterConfigurator = m_shooter.getConfigurator();       
@@ -80,10 +89,10 @@ public class Turret extends SubsystemBase{
         m_turretLimitConfig.StatorCurrentLimitEnable = true;
         turretConfigurator.apply(m_turretLimitConfig);
 
-        m_turret.getConfigurator().apply(shooterConfig);
-        m_shooterLimitConfig.StatorCurrentLimit = TurretConstants.currentLimitShooter;
-        m_shooterLimitConfig.StatorCurrentLimitEnable = true;
-        shooterConfigurator.apply(m_shooterLimitConfig);
+       // m_turret.getConfigurator().apply(shooterConfig);
+       // m_shooterLimitConfig.StatorCurrentLimit = TurretConstants.currentLimitShooter;
+       // m_shooterLimitConfig.StatorCurrentLimitEnable = true;
+       // shooterConfigurator.apply(m_shooterLimitConfig);
 
         // Applies a deadband to turn the turret (in degrees)
         // TODO: replace parameter to a constant
@@ -92,15 +101,8 @@ public class Turret extends SubsystemBase{
         TX = VisionConstants.tx;
         TY = VisionConstants.ty;
         TV = VisionConstants.tv;
-    }
 
-    public void periodic(){
-        TX = LimelightHelpers.getTX("Limelight 4");
-        TY = LimelightHelpers.getTY("Limelight 4");
-        TV = LimelightHelpers.getTV("Limelight 4");
-
-        // Constantly updates the turret state
-        setTurretAction(turretAction);
+        turretAction = TurretState.IDLE;
     }
 
     /**
@@ -108,7 +110,7 @@ public class Turret extends SubsystemBase{
      * @param speedPercentage from -1 to 1.
      */
     public void spinTurret(double speedPercentage){
-        m_turret.setControl(m_dutyCycleTurret.withOutput(speedPercentage));
+        m_turret.set(m_pidControl.calculate(speedPercentage));
     }
 
     /*
@@ -123,6 +125,7 @@ public class Turret extends SubsystemBase{
      * @param speedPercentage from -1 to 1.
      */
     public void startShooter(double speedPercentage){
+        //m_shooter.setControl(m_voltage.withVelocity(speedPercentage).withFeedForward(0.5));
         m_shooter.setControl(m_dutyCycleShooter.withOutput(speedPercentage));
     }
 
@@ -130,9 +133,11 @@ public class Turret extends SubsystemBase{
      * Stops both the turret and shooter movement.  
      */
     public void stopMotors(){
+   //     m_turret.setControl(m_dutyCycleTurret.withOutput(0));
+    //    m_shooter.setControl(m_dutyCycleTurret.withOutput(0));
         m_turret.setControl(m_dutyCycleTurret.withOutput(0));
         m_shooter.setControl(m_dutyCycleTurret.withOutput(0));
-        m_turret.setNeutralMode(NeutralModeValue.Brake);
+      //  m_turret.setNeutralMode(NeutralModeValue.Brake);
     }
 
     /*
@@ -151,34 +156,38 @@ public class Turret extends SubsystemBase{
         return angle;
     }
 
+    public double getMotorRotation(){
+        return m_turret.getPosition().getValueAsDouble();
+    }
+
     /**
      * Allows the operator to control the direction of the turret.
      * Reverses the speed once the turret reaches the left or right limits.
      * @param speedPercentage as a percentage from -1 to 1.
      */
     public void rotateManual(double speedPercentage){
-        if(ControllerConstants.operatorController.getLeftTriggerAxis() > 0.2){
+        if(ControllerConstants.operatorController.x().getAsBoolean()){
             double limit = TurretConstants.leftLimit;
 
-            if(getTurretDegree() >= limit){
-                m_turret.setControl(m_dutyCycleTurret.withOutput(speedPercentage));
+            if(getMotorRotation() <= limit){
+                m_turret.set(speedPercentage);
 
-            } else if(getTurretDegree() <= limit){
-                m_turret.setControl(m_dutyCycleTurret.withOutput(-speedPercentage));
+            } else if(getMotorRotation() >= limit){
+                m_turret.set(-speedPercentage);
 
             }
-        } else if(ControllerConstants.operatorController.getRightTriggerAxis() > 0.2){
+        } else if(ControllerConstants.operatorController.b().getAsBoolean()){
             double limit = TurretConstants.rightLimit;
 
-            if(getTurretDegree() <= limit){
-                m_turret.setControl(m_dutyCycleTurret.withOutput(speedPercentage));
+            if(getMotorRotation() >= limit){
+                m_turret.set(-speedPercentage);
 
-            } else if(getTurretDegree() >= limit){
-                m_turret.setControl(m_dutyCycleTurret.withOutput(-speedPercentage));
+            } else if(getMotorRotation() <= limit){
+                m_turret.set(speedPercentage);
 
             }
         } else{
-            m_turret.setControl(m_dutyCycleTurret.withOutput(0));
+            m_turret.set(0);
         }
     }
 
@@ -187,18 +196,20 @@ public class Turret extends SubsystemBase{
      * @link https://docs.limelightvision.io/docs/docs-limelight/tutorials/tutorial-estimating-distance  -> Explains the calculations to find the distance
      * @return The distance as a degree in radians
      */
-    public double findDistance(){
+  /* public double findDistance(){
         double degreesToGoal = VisionConstants.mountedDegree + TY;
         double radiansToGoal = Math.toRadians(degreesToGoal);
 
         return (VisionConstants.hubApriltagHeight - VisionConstants.lensHeight)/Math.tan(radiansToGoal);
     }
+        */
 
     /**
      * Gets the degree the robot needs to turn to get to center of apriltag if the apritag is detected.
      * Results in an error if the apriltag isn't there.
      * @return The degree in radians.
      */
+    /*
     public double findAngleToTarget(){
         if(TV == true){
             double distanceToApriltag = findDistance();
@@ -216,11 +227,13 @@ public class Turret extends SubsystemBase{
             return apriltagNotFound; 
         }
     }
+        */
 
     /**
      * Gets the velocity needed to center the turret to the apriltag by the x axis of the turret
      * @return the speed
      */
+    /*
     //TODO: This should be tested later with turnUntilApriltag function
     public double limelight_aim_proportional(){    
         // kP (constant of proportionality)
@@ -242,12 +255,14 @@ public class Turret extends SubsystemBase{
 
         return targetingAngularVelocity;
     } 
+    */
 
     /**
      * Spins the turret (in respect to the limit) until the apriltag is in range of the limelight's vision.
      * Finds the angle needed to center the turret to the apriltag and turns the turret by the desired angle.
      * @param speedPercentage as a percetage from -1 to 1.
      */
+    /*
     public void turnUntilApriltag(double speedPercentage){
         if(!TV){
             m_turret.setControl(m_dutyCycleTurret.withOutput(speedPercentage));
@@ -265,12 +280,14 @@ public class Turret extends SubsystemBase{
             }
         }
     }
+        */
 
     /**
      * Spins the turret (in respect to the limit) until the apriltag is in range of the limelight's vision.
      * Contiously centers the turret to the apriltag. 
      * @param speedPercentage from -1 to 1.
      */
+    /*
     public void track(double speedPercentage){
         if(!TV){
             m_turret.setControl(m_dutyCycleTurret.withOutput(speedPercentage));
@@ -284,6 +301,11 @@ public class Turret extends SubsystemBase{
             spinTurret(m_pidControl.calculate(getTurretDegree()));
         }
     }
+    */
+
+    public Command setTurretState(TurretState state){
+        return new InstantCommand(()-> turretAction = state);
+    }
 
     /**
      * Assigns the prior functions to each state of the turret.
@@ -292,10 +314,21 @@ public class Turret extends SubsystemBase{
     public void setTurretAction(TurretState state){
         switch (state){
             case IDLE:              stopMotors();                 break;
-            case MANUAL:            rotateManual(0.1);            break;
-            case LOCK_ONTO_TARGET:  turnUntilApriltag(0.5);       break;
-            case TRACK_APRILTAG:    track(0.5);                   break; 
+            case MANUAL:            stopMotors();            break;
+            case LOCK_ONTO_TARGET:  stopMotors();       break;
+            case TRACK_APRILTAG:    stopMotors();                   break; 
             default: stopMotors();                                break;
         }
+    }
+
+    public void periodic(){
+        TX = LimelightHelpers.getTX("Limelight 4");
+        TY = LimelightHelpers.getTY("Limelight 4");
+        TV = LimelightHelpers.getTV("Limelight 4");
+
+        System.out.println(getMotorRotation());
+
+        // Constantly updates the turret state
+       setTurretAction(turretAction);
     }
 }

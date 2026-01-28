@@ -95,6 +95,7 @@ public class RobotContainer {
     ControllerConstants.operatorController.leftBumper().whileTrue(new IntakeFuel(m_intake, IntakeConstants.linearSlideSpeed, IntakeConstants.rollerSpeed));
     ControllerConstants.operatorController.y().whileTrue(new Shoot(m_turret, TurretConstants.shooterSpeed));
     ControllerConstants.operatorController.b().whileTrue(new FindApriltag(m_turret, TurretConstants.turretSpeed));
+    ControllerConstants.operatorController.x().whileTrue(new FindApriltag(m_turret, -TurretConstants.turretSpeed));
   }
 
   /*
