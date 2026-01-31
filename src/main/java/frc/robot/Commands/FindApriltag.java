@@ -26,7 +26,8 @@ public class FindApriltag extends Command {
   @Override
   public void execute() {
     //m_turret.setTurretAction(TurretState.LOCK_ONTO_TARGET);
-    m_turret.spinTurret(v_speedPercentage);
+   // m_turret.spinTurret(v_speedPercentage);
+   m_turret.turnUntilApriltag(v_speedPercentage);
   }
 
   // Called once the command ends or is interrupted.
