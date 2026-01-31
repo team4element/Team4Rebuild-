@@ -64,8 +64,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     // Defines the field forward direction
     public final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle = new SwerveRequest.FieldCentricFacingAngle()
-        .withDeadband(.5)
-        .withRotationalDeadband(.5)
+        .withDeadband(.2)
+        .withRotationalDeadband(.2)
         .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
     /*
@@ -310,7 +310,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 setOperatorPerspectiveForward(
                         allianceColor == Alliance.Red
                                 ? kRedAlliancePerspectiveRotation
-                                : kBlueAlliancePerspectiveRotation);
+                               : kBlueAlliancePerspectiveRotation);
                 m_hasAppliedOperatorPerspective = true;
             });
         }

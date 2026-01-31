@@ -48,7 +48,7 @@ public class RobotContainer {
   private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
   private double MaxAngularRate = RotationsPerSecond.of(0.70).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
-  /* Setting up bindings for necessary control of the swerve drive platform */
+  // Setting up bindings for necessary control of the swerve drive platform */
   private final SwerveRequest.RobotCentric drive = new SwerveRequest.RobotCentric()
             .withDeadband(.4).withRotationalDeadband(.4)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
@@ -77,18 +77,18 @@ public class RobotContainer {
   private void configureBindings() {
 
     m_drivetrain.setDefaultCommand(
-      // Drivetrain will execute this command periodically
+     //  Drivetrain will execute this command periodically
       m_drivetrain.applyRequest(() ->
         drive.withVelocityX(ControllerConstants.yTranslationModifier.apply(
                 -ControllerConstants.driverController.getLeftY() * MaxSpeed * m_drivetrain.speedToDouble(m_drivetrain.m_speed))) // Drive forward with negative Y (forward)
              .withVelocityY(ControllerConstants.xTranslationModifier.apply(
                 -ControllerConstants.driverController.getLeftX() * MaxSpeed * m_drivetrain.speedToDouble(m_drivetrain.m_speed))) // Drive left with negative X (left)
              .withRotationalRate(ControllerConstants.zRotationModifier.apply(
-                -ControllerConstants.driverController.getRightX() * MaxAngularRate * m_drivetrain.speedToDouble(m_drivetrain.m_speed))) // Drive counterclockwise with negative X (left)
+                ControllerConstants.driverController.getRightX() * MaxAngularRate * m_drivetrain.speedToDouble(m_drivetrain.m_speed))) // Drive counterclockwise with negative X (left)
             )
-        );    
+       );    
 
-    ControllerConstants.driverController.leftBumper().whileTrue(m_drivetrain.runOnce(() -> m_drivetrain.seedFieldCentric()));
+    //ControllerConstants.driverController.leftBumper().whileTrue(m_drivetrain.runOnce(() -> m_drivetrain.seedFieldCentric()));
 
     ControllerConstants.operatorController.pov(0).whileTrue(new ManualClimbUp(m_climb, ClimbConstants.climbSpeed));
     ControllerConstants.operatorController.pov(180).whileTrue(new ManualClimbDown(m_climb, ClimbConstants.climbSpeed));
