@@ -68,15 +68,15 @@ public class Turret extends SubsystemBase{
         m_voltage = new VelocityVoltage(0).withSlot(0);
 
         m_turretLimitConfig = new CurrentLimitsConfigs();
-        //m_shooterLimitConfig = new CurrentLimitsConfigs();
+        m_shooterLimitConfig = new CurrentLimitsConfigs();
 
         TalonFXConfiguration turretConfig = new TalonFXConfiguration();
-        //TalonFXConfiguration shooterConfig = new TalonFXConfiguration();
+        TalonFXConfiguration shooterConfig = new TalonFXConfiguration();
 
         // Assigns PID values to the shooter for precise speed 
-        //shooterConfig.Slot0.kP = TurretConstants.KPTurret; // Controls position error
-        //shooterConfig.Slot0.kI = TurretConstants.KITurret; // Controls integral error using kP and kD (don't change)
-        //shooterConfig.Slot0.kD = TurretConstants.KDTurret; // Controls derivative error 
+        shooterConfig.Slot0.kP = TurretConstants.KPShooter; // Controls position error
+        shooterConfig.Slot0.kI = TurretConstants.KIShooter; // Controls integral error using kP and kD (don't change)
+        shooterConfig.Slot0.kD = TurretConstants.KDShooter; // Controls derivative error 
 
         // Assigns PID values to the turret for precise speed 
         turretConfig.Slot0.kP = 0; // Controls position error
@@ -85,14 +85,14 @@ public class Turret extends SubsystemBase{
         turretConfig.Slot0.kS = 1;
 
        TalonFXConfigurator turretConfigurator = m_turret.getConfigurator();
-       // TalonFXConfigurator shooterConfigurator = m_shooter.getConfigurator();       
+       TalonFXConfigurator shooterConfigurator = m_shooter.getConfigurator();       
 
         m_turret.getConfigurator().apply(turretConfig);
         m_turretLimitConfig.StatorCurrentLimit = 100;
         m_turretLimitConfig.StatorCurrentLimitEnable = true;
         turretConfigurator.apply(m_turretLimitConfig);
 
-       // m_turret.getConfigurator().apply(shooterConfig);
+        m_shooter.getConfigurator().apply(shooterConfig);
        // m_shooterLimitConfig.StatorCurrentLimit = TurretConstants.currentLimitShooter;
        // m_shooterLimitConfig.StatorCurrentLimitEnable = true;
        // shooterConfigurator.apply(m_shooterLimitConfig);
@@ -125,7 +125,7 @@ public class Turret extends SubsystemBase{
      * @param speedPercentage from -1 to 1.
      */
     public void startShooter(double speedPercentage){
-        m_shooter.setControl(m_dutyCycleShooter.withOutput(speedPercentage));
+        m_shooter.setControl(m_voltage.withVelocity(speedPercentage).withSlot(0));
     }
 
     /**
@@ -266,13 +266,9 @@ public class Turret extends SubsystemBase{
      */
     
     public void turnUntilApriltag(double speedPercentage){
-        if(!TV){
-            rotateManual(speedPercentage);
-        } else{
             //m_pidControl.setSetpoint(getLimelightYaw()+findAngleToTarget()*(11.27272727/(2*Math.PI)));
-            double angle = findAngleToTarget()*(11.273/(2*Math.PI));
-           m_turret.set(m_pidControl.calculate(getLimelightYaw()+angle));
-        }
+        double angle = findAngleToTarget()*(11.273/(2*Math.PI));
+        m_turret.set(m_pidControl.calculate(getLimelightYaw()+angle));
     }
 
    // public Command setTurretState(TurretState state){

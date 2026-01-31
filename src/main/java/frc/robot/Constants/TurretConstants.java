@@ -10,7 +10,7 @@ public class TurretConstants {
     public static final double rightLimit = -90;
 
     public static final double dutyCycleTurret = 0.5;
-    public static final double dutyCycleShooter = 0.5;
+    public static final double dutyCycleShooter = 1;
 
     public static final double currentLimitTurret = 80;
     public static final double currentLimitShooter = 80;
@@ -23,8 +23,9 @@ public class TurretConstants {
     public static final double KIShooter = 0;
     public static final double KDShooter = 0;
 
-    public static final double shooterSpeed = 0.5;
+    public static final double shooterSpeed = 60;
     public static final double shooterTimeout = 2;
 
     public static final double turretSpeed = 0.2;
+    // 38 inches from limelight to wall of hub
 }
