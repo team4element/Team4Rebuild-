@@ -6,11 +6,9 @@ import frc.robot.Subsystems.Turret;
 public class Shoot extends Command {
   /** Creates a new Shoot. */
   public Turret m_turret;
-  public double v_speedPercentage;
   
-  public Shoot(Turret turret, double speedPercentage) {
+  public Shoot(Turret turret) {
     m_turret = turret;
-    v_speedPercentage = speedPercentage;
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(turret);
@@ -23,7 +21,7 @@ public class Shoot extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_turret.startShooter(v_speedPercentage);
+    m_turret.startShooter();
   }
 
   // Called once the command ends or is interrupted.

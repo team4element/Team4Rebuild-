@@ -19,13 +19,16 @@ public class TurretConstants {
     public static final double KITurret = 0.02;
     public static final double KDTurret = 0; //damp, helps with ossilation, if too jerky -> higher value, if too slow -> lower value + more kP
 
-    public static final double KPShooter = 0.5; 
+    public static final double KPShooter = 0.25; 
     public static final double KIShooter = 0;
     public static final double KDShooter = 0;
+    public static final double KVShooter = 0.1123;
 
-    public static final double shooterSpeed = 60;
+    public static final double shooterSpeed = 20;
     public static final double shooterTimeout = 2;
 
+    public static final double minutes = 60;
+
     public static final double turretSpeed = 0.2;
-    // 38 inches from limelight to wall of hub
+    // 38 inches from limelight to wall of hub needs 45 rps 
 }

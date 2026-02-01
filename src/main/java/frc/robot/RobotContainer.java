@@ -63,7 +63,7 @@ public class RobotContainer {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
-    NamedCommands.registerCommand("Shoot", new Shoot(m_turret, TurretConstants.shooterSpeed).withTimeout(TurretConstants.shooterTimeout));
+    NamedCommands.registerCommand("Shoot", new Shoot(m_turret).withTimeout(TurretConstants.shooterTimeout));
     NamedCommands.registerCommand("Climb", new ManualClimbDown(m_climb, ClimbConstants.climbSpeed).withTimeout(ClimbConstants.climbTimeout));
     NamedCommands.registerCommand("Intake", new IntakeAndRetract(m_intake, IntakeConstants.linearSlideSpeed, IntakeConstants.rollerSpeed).withTimeout(IntakeConstants.intakeTimeout));
     NamedCommands.registerCommand("Transfer", new TransferFuel(m_spinster, m_conveyor, ConveyorConstants.conveyorSpeed));
@@ -93,7 +93,7 @@ public class RobotContainer {
     ControllerConstants.operatorController.pov(0).whileTrue(new ManualClimbUp(m_climb, ClimbConstants.climbSpeed));
     ControllerConstants.operatorController.pov(180).whileTrue(new ManualClimbDown(m_climb, ClimbConstants.climbSpeed));
     ControllerConstants.operatorController.leftBumper().whileTrue(new IntakeFuel(m_intake, IntakeConstants.linearSlideSpeed, IntakeConstants.rollerSpeed));
-    ControllerConstants.operatorController.y().whileTrue(new Shoot(m_turret, TurretConstants.shooterSpeed));
+    ControllerConstants.operatorController.y().whileTrue(new Shoot(m_turret));
     ControllerConstants.operatorController.b().whileTrue(new FindApriltag(m_turret, TurretConstants.turretSpeed));
     ControllerConstants.operatorController.x().whileTrue(new FindApriltag(m_turret, -TurretConstants.turretSpeed));
   }

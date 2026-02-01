@@ -18,6 +18,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -54,6 +55,14 @@ public class Turret extends SubsystemBase{
 
     //private TurretState turretAction;
 
+    TalonFXConfiguration shooterConfig;
+
+    double lastRPM;
+    double lastP;
+    double lastI;
+    double lastD;
+    double lastV;
+
     public Turret(){
         m_turret = new TalonFX(TurretConstants.turretID);
         m_shooter = new TalonFX(TurretConstants.shooterID);
@@ -71,18 +80,19 @@ public class Turret extends SubsystemBase{
         m_shooterLimitConfig = new CurrentLimitsConfigs();
 
         TalonFXConfiguration turretConfig = new TalonFXConfiguration();
-        TalonFXConfiguration shooterConfig = new TalonFXConfiguration();
+        shooterConfig = new TalonFXConfiguration();
 
         // Assigns PID values to the shooter for precise speed 
         shooterConfig.Slot0.kP = TurretConstants.KPShooter; // Controls position error
         shooterConfig.Slot0.kI = TurretConstants.KIShooter; // Controls integral error using kP and kD (don't change)
-        shooterConfig.Slot0.kD = TurretConstants.KDShooter; // Controls derivative error 
+        shooterConfig.Slot0.kD = TurretConstants.KDShooter; // Controls derivative error
+        shooterConfig.Slot0.kV = TurretConstants.KVShooter;
 
-        // Assigns PID values to the turret for precise speed 
-        turretConfig.Slot0.kP = 0; // Controls position error
-        turretConfig.Slot0.kI = 0; // Controls integral error using kP and kD (don't change)
-        turretConfig.Slot0.kD = 0; // Controls derivative error 
-        turretConfig.Slot0.kS = 1;
+        lastRPM = TurretConstants.shooterSpeed;
+        lastP = TurretConstants.KPShooter;
+        lastI = TurretConstants.KIShooter;
+        lastD = TurretConstants.KDShooter;
+        lastV = TurretConstants.KVShooter;
 
        TalonFXConfigurator turretConfigurator = m_turret.getConfigurator();
        TalonFXConfigurator shooterConfigurator = m_shooter.getConfigurator();       
@@ -97,11 +107,11 @@ public class Turret extends SubsystemBase{
        // m_shooterLimitConfig.StatorCurrentLimitEnable = true;
        // shooterConfigurator.apply(m_shooterLimitConfig);
 
-        // Applies a deadband to turn the turret (in degrees)
-        // TODO: replace parameter to a constant
-        //m_pidControl.setTolerance(2);
-
-        //turretAction = TurretState.IDLE;
+        SmartDashboard.putNumber("Shooter RPM", TurretConstants.shooterSpeed);
+        SmartDashboard.putNumber("Shooter kP", TurretConstants.KPShooter);
+        SmartDashboard.putNumber("Shooter kI", TurretConstants.KIShooter);
+        SmartDashboard.putNumber("Shooter kD", TurretConstants.KDShooter);
+        SmartDashboard.putNumber("Shooter kV", TurretConstants.KVShooter);
     }
 
     /**
@@ -118,14 +128,6 @@ public class Turret extends SubsystemBase{
     public void resetTurret(){
         m_turret.setPosition(0);
         LimelightHelpers.SetIMUMode("limelight-four", 1);
-    }
-
-    /**
-     * Assigns a speed to run the shooter motor.
-     * @param speedPercentage from -1 to 1.
-     */
-    public void startShooter(double speedPercentage){
-        m_shooter.setControl(m_voltage.withVelocity(speedPercentage).withSlot(0));
     }
 
     /**
@@ -200,12 +202,27 @@ public class Turret extends SubsystemBase{
      * @return The distance as a degree in radians
      */
    public double findDistance(){
+        //This function is broken and needs to be fixed
         double degreesToGoal = VisionConstants.mountedDegree + TY;
         double radiansToGoal = Math.toRadians(degreesToGoal);
 
         return (VisionConstants.hubApriltagHeight - VisionConstants.altitude)/Math.tan(radiansToGoal);
     }
+
+    public double shootingDistance(){
+        double distance = findDistance();
+        double RPS = (-0.000003*Math.pow(distance,3.0)) + (0.003802*Math.pow(distance,2))+ (-0.268116*distance) + 50.724070;
+        System.out.println("RPS: "+ RPS);
+        return RPS;
+    }
     
+    /**
+     * Assigns a speed to run the shooter motor.
+     * @param speedPercentage from -1 to 1.
+     */
+    public void startShooter(){
+        m_shooter.setControl(m_voltage.withVelocity(shootingDistance()).withSlot(0));
+    }
 
     /**
      * Gets the degree the robot needs to turn to get to center of apriltag if the apritag is detected.
@@ -289,15 +306,45 @@ public class Turret extends SubsystemBase{
         }
     }
 
+    public void updateValues(double P, double I, double D, double V, double RPM){
+        if(P != lastP || I != lastI || D != lastD || D != lastV ){
+            shooterConfig.Slot0.kP = P;
+            shooterConfig.Slot0.kI = I;
+            shooterConfig.Slot0.kD = D;
+            shooterConfig.Slot0.kV = V;
+            m_shooter.getConfigurator().apply(shooterConfig);
+
+            lastP = P;
+            lastI = I;
+            lastD = D;
+            lastV = V;
+        }
+
+        if(RPM != lastRPM){
+            lastRPM = RPM;
+        }
+    }
+
     public void periodic(){
         TX = LimelightHelpers.getTX("limelight-four");
         TY = LimelightHelpers.getTY("limelight-four");
         TV = LimelightHelpers.getTV("limelight-four");
 
         //System.out.println(getLimelightYaw());
-        System.out.println(findAngleToTarget());
+        //System.out.println(findAngleToTarget());
 
         // Constantly updates the turret state
       // setTurretAction(turretAction);
+      System.out.println(m_shooter.getVelocity().getValueAsDouble());
+      //  System.out.println(findDistance());
+
+       double shooterRPM = SmartDashboard.getNumber("Shooter RPM", TurretConstants.shooterSpeed);
+        double shooterP = SmartDashboard.getNumber("Shooter kP", TurretConstants.KPShooter);
+        double shooterI = SmartDashboard.getNumber("Shooter kI", TurretConstants.KIShooter);
+        double shooterD = SmartDashboard.getNumber("Shooter kD", TurretConstants.KDShooter);
+       double shooterV = SmartDashboard.getNumber("Shooter kV", TurretConstants.KVShooter);
+
+        //updateValues(shooterP, shooterI, shooterD, shooterV, shooterRPM);
+
     }
 }
